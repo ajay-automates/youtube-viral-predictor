@@ -1,0 +1,411 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>YouTube Viral Predictor</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            max-width: 600px;
+            width: 100%;
+            padding: 40px;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .header h1 {
+            color: #667eea;
+            font-size: 28px;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            color: #666;
+            font-size: 14px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            color: #333;
+            font-weight: 500;
+            font-size: 14px;
+        }
+
+        input,
+        textarea,
+        select {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 14px;
+            font-family: inherit;
+            transition: border-color 0.3s;
+        }
+
+        input:focus,
+        textarea:focus,
+        select:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        textarea {
+            resize: vertical;
+            min-height: 60px;
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+        }
+
+        button {
+            width: 100%;
+            padding: 14px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+            margin-top: 10px;
+        }
+
+        button:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(102, 126, 234, 0.4);
+        }
+
+        button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        .loading {
+            display: none;
+            text-align: center;
+            margin-top: 20px;
+        }
+
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #667eea;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .result {
+            display: none;
+            margin-top: 30px;
+            padding: 20px;
+            border-radius: 12px;
+            background: #f8f9ff;
+            border-left: 4px solid #667eea;
+        }
+
+        .result.show {
+            display: block;
+            animation: slideIn 0.3s ease-out;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .result-title {
+            color: #667eea;
+            font-weight: 600;
+            margin-bottom: 10px;
+            font-size: 16px;
+        }
+
+        .result-text {
+            color: #333;
+            line-height: 1.6;
+            font-size: 14px;
+        }
+
+        .error {
+            display: none;
+            margin-top: 20px;
+            padding: 15px;
+            background: #ffe0e0;
+            color: #d32f2f;
+            border-radius: 8px;
+            border-left: 4px solid #d32f2f;
+        }
+
+        .error.show {
+            display: block;
+        }
+
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 10px;
+            margin-top: 20px;
+            padding-top: 20px;
+            border-top: 2px solid #e0e0e0;
+        }
+
+        .stat {
+            text-align: center;
+        }
+
+        .stat-label {
+            font-size: 12px;
+            color: #999;
+            margin-bottom: 5px;
+        }
+
+        .stat-value {
+            font-size: 16px;
+            font-weight: 600;
+            color: #667eea;
+        }
+
+        .footer {
+            text-align: center;
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 2px solid #e0e0e0;
+            font-size: 12px;
+            color: #999;
+        }
+
+        .footer a {
+            color: #667eea;
+            text-decoration: none;
+        }
+
+        .footer a:hover {
+            text-decoration: underline;
+        }
+
+        @media (max-width: 600px) {
+            .container {
+                padding: 20px;
+            }
+
+            .header h1 {
+                font-size: 24px;
+            }
+
+            .form-row {
+                grid-template-columns: 1fr;
+            }
+
+            .stats {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🎬 YouTube Viral Predictor</h1>
+            <p>AI-powered prediction for YouTube video virality</p>
+        </div>
+
+        <form id="predictionForm">
+            <div class="form-group">
+                <label for="title">Video Title *</label>
+                <input type="text" id="title" name="title" placeholder="e.g., Top 10 AI Tools You NEED in 2026" required>
+            </div>
+
+            <div class="form-group">
+                <label for="tags">Tags *</label>
+                <input type="text" id="tags" name="tags" placeholder="e.g., ai,tools,tutorial,productivity" required>
+            </div>
+
+            <div class="form-group">
+                <label for="category">Category *</label>
+                <select id="category" name="category" required>
+                    <option value="">Select a category</option>
+                    <option value="Education">Education</option>
+                    <option value="Entertainment">Entertainment</option>
+                    <option value="Business">Business</option>
+                    <option value="Lifestyle">Lifestyle</option>
+                    <option value="Fitness">Fitness</option>
+                    <option value="Gaming">Gaming</option>
+                    <option value="Music">Music</option>
+                    <option value="Technology">Technology</option>
+                    <option value="Other">Other</option>
+                </select>
+            </div>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="likes">Likes *</label>
+                    <input type="number" id="likes" name="likes" placeholder="0" min="0" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="comments">Comments *</label>
+                    <input type="number" id="comments" name="comments" placeholder="0" min="0" required>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label for="views">Views *</label>
+                <input type="number" id="views" name="views" placeholder="0" min="0" required>
+            </div>
+
+            <button type="submit">🔮 Predict Virality</button>
+        </form>
+
+        <div class="loading" id="loading">
+            <div class="spinner"></div>
+            <p style="margin-top: 10px; color: #667eea;">Analyzing your video...</p>
+        </div>
+
+        <div class="error" id="error"></div>
+
+        <div class="result" id="result">
+            <div class="result-title">📊 Prediction Result</div>
+            <div class="result-text" id="resultText"></div>
+            <div class="stats" id="stats"></div>
+        </div>
+
+        <div class="footer">
+            <p>🤖 Powered by fine-tuned Llama 2 7B trained on 40,000+ YouTube videos</p>
+            <p><a href="https://huggingface.co/ajaykumarreddynelavetla/youtube-viral-predictor" target="_blank">View Model on Hugging Face</a></p>
+        </div>
+    </div>
+
+    <script>
+        document.getElementById('predictionForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const title = document.getElementById('title').value;
+            const tags = document.getElementById('tags').value;
+            const category = document.getElementById('category').value;
+            const likes = parseInt(document.getElementById('likes').value) || 0;
+            const comments = parseInt(document.getElementById('comments').value) || 0;
+            const views = parseInt(document.getElementById('views').value) || 0;
+
+            const errorDiv = document.getElementById('error');
+            const loadingDiv = document.getElementById('loading');
+            const resultDiv = document.getElementById('result');
+
+            errorDiv.classList.remove('show');
+            resultDiv.classList.remove('show');
+            loadingDiv.style.display = 'block';
+
+            try {
+                const response = await fetch('/predict', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        title,
+                        tags,
+                        category,
+                        likes,
+                        comments,
+                        views
+                    })
+                });
+
+                const data = await response.json();
+
+                loadingDiv.style.display = 'none';
+
+                if (data.error) {
+                    errorDiv.textContent = 'Error: ' + data.error;
+                    errorDiv.classList.add('show');
+                } else {
+                    document.getElementById('resultText').innerHTML = `
+                        <strong>${data.prediction}</strong>
+                    `;
+
+                    const engagement_rate = likes > 0 ? ((comments / likes) * 100).toFixed(1) : 0;
+                    const like_ratio = views > 0 ? ((likes / views) * 100).toFixed(2) : 0;
+
+                    document.getElementById('stats').innerHTML = `
+                        <div class="stat">
+                            <div class="stat-label">Views</div>
+                            <div class="stat-value">${views.toLocaleString()}</div>
+                        </div>
+                        <div class="stat">
+                            <div class="stat-label">Likes</div>
+                            <div class="stat-value">${likes.toLocaleString()}</div>
+                        </div>
+                        <div class="stat">
+                            <div class="stat-label">Like Ratio</div>
+                            <div class="stat-value">${like_ratio}%</div>
+                        </div>
+                        <div class="stat">
+                            <div class="stat-label">Engagement Rate</div>
+                            <div class="stat-value">${engagement_rate}%</div>
+                        </div>
+                    `;
+
+                    resultDiv.classList.add('show');
+                }
+            } catch (error) {
+                loadingDiv.style.display = 'none';
+                errorDiv.textContent = 'Error: ' + error.message;
+                errorDiv.classList.add('show');
+            }
+        });
+
+        // Format number input on change
+        document.querySelectorAll('input[type="number"]').forEach(input => {
+            input.addEventListener('change', function() {
+                if (this.value) {
+                    this.value = Math.max(0, parseInt(this.value) || 0);
+                }
+            });
+        });
+    </script>
+</body>
+</html>
